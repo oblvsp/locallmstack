@@ -1,0 +1,22 @@
+[Unit]
+Description=Read-only host metrics agent for Open WebUI
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/vsp/Документы/locallmstack/sysadmin/host_agent.py
+Environment=HOSTAGENT_BIND=172.17.0.1
+Environment=HOSTAGENT_PORT=8767
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+RestrictSUIDSGID=yes
+
+[Install]
+WantedBy=default.target
