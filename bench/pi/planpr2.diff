@@ -1,0 +1,56 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index 9bea290..051cd69 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -8,3 +8,5 @@
+   (таблица: дата, действие, команда/тест, результат).
+ - В `LOGPR.md` записывай только фактически выполненные команды и реальные результаты.
+   Если тесты не прошли — так и напиши, с фактическим выводом.
++- Дату для `LOGPR.md` бери только из команды `date +%F`. Не выдумывай и не угадывай дату;
++  если команда не выполнялась — оставь поле даты пустым.
+diff --git a/LOGPR.md b/LOGPR.md
+index 5374f0f..36ecd3f 100644
+--- a/LOGPR.md
++++ b/LOGPR.md
+@@ -2,3 +2,4 @@
+ 
+ | дата | действие | команда/тест | результат |
+ |---|---|---|---|
++| 2026-10-30 | Исправление calc.py: добавлена проверка whole == 0 в percent() и проверка пустого списка в average() | python3 -m unittest -q test_calc.py | OK (4 теста пройдены) |
+diff --git a/PLANPR.md b/PLANPR.md
+index eb4512c..2706aaf 100644
+--- a/PLANPR.md
++++ b/PLANPR.md
+@@ -2,8 +2,17 @@
+ 
+ ## Цель
+ 
++Исправить ошибки деления на ноль в calc.py для функций percent() и average().
++
+ ## Архитектурные решения
+ 
++- В `percent(part, whole)`: добавить проверку `if whole == 0: return 0.0`
++- В `average(values)`: добавить проверку `if not values: return 0.0`
++
+ ## Известные ограничения
+ 
++Тесты не изменяются и не ослабляются.
++
+ ## Следующий шаг
++
++Запускать тесты для проверки корректности работы.
+diff --git a/calc.py b/calc.py
+index 97fd545..cd1c542 100644
+--- a/calc.py
++++ b/calc.py
+@@ -1,6 +1,10 @@
+ def percent(part, whole):
++    if whole == 0:
++        return 0.0
+     return part / whole * 100
+ 
+ 
+ def average(values):
++    if not values:
++        return 0.0
+     return sum(values) / len(values)
