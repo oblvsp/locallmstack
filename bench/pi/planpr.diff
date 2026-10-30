@@ -1,0 +1,47 @@
+diff --git a/LOGPR.md b/LOGPR.md
+index 5374f0f..06e447f 100644
+--- a/LOGPR.md
++++ b/LOGPR.md
+@@ -2,3 +2,4 @@
+ 
+ | дата | действие | команда/тест | результат |
+ |---|---|---|---|
++| 2025-12-28 | Исправление calc.py: добавлена проверка на деление на ноль в функциях percent и average | python3 -m unittest -q test_calc.py | OK (4 теста пройдены) |
+diff --git a/PLANPR.md b/PLANPR.md
+index eb4512c..a4bec7b 100644
+--- a/PLANPR.md
++++ b/PLANPR.md
+@@ -1,9 +1,15 @@
+ # PLANPR.md
+ 
+ ## Цель
++Исправить функции `percent` и `average` в calc.py для корректной работы с граничными случаями (деление на ноль).
+ 
+ ## Архитектурные решения
++- Добавить проверку `if whole == 0` в функции `percent`, возвращая 0.0 при делении на ноль.
++- Добавить проверку `if not values` в функции `average`, возвращая 0.0 для пустого списка.
+ 
+ ## Известные ограничения
++- Функция `percent(0, 0)` возвращает 0.0 вместо ошибки.
++- Функция `average([])` возвращает 0.0 вместо ошибки.
+ 
+ ## Следующий шаг
++Тесты проходят успешно. Завершить работу.
+diff --git a/__pycache__/calc.cpython-312.pyc b/__pycache__/calc.cpython-312.pyc
+index f85d326..550e8b6 100644
+Binary files a/__pycache__/calc.cpython-312.pyc and b/__pycache__/calc.cpython-312.pyc differ
+diff --git a/calc.py b/calc.py
+index 97fd545..cd1c542 100644
+--- a/calc.py
++++ b/calc.py
+@@ -1,6 +1,10 @@
+ def percent(part, whole):
++    if whole == 0:
++        return 0.0
+     return part / whole * 100
+ 
+ 
+ def average(values):
++    if not values:
++        return 0.0
+     return sum(values) / len(values)
