@@ -1,0 +1,26 @@
+{
+ "id": "chatcmpl-99",
+ "object": "chat.completion",
+ "created": 1793362386,
+ "model": "qwen3.5:9b",
+ "system_fingerprint": "fp_ollama",
+ "choices": [
+  {
+   "index": 0,
+   "message": {
+    "role": "assistant",
+    "content": "",
+    "reasoning": "The issue is that the frame parsing isn't working correctly. Let me check how frames are parsed and understand the structure better. The problem is likely in how I'm constructing the test frame - it needs to go through the full parsing pipeline including ATT/L2CAP wrapping."
+   },
+   "finish_reason": "stop"
+  }
+ ],
+ "usage": {
+  "prompt_tokens": 15765,
+  "prompt_tokens_details": {
+   "cached_tokens": 0
+  },
+  "completion_tokens": 909,
+  "total_tokens": 16674
+ }
+}

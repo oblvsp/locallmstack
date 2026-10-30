@@ -1,0 +1,22 @@
+{
+  "model": "qwen3.5:9b",
+  "created_at": "2026-10-30T12:10:13.603246891Z",
+  "message": {
+    "role": "assistant",
+    "content": "",
+    "thinking": "Т"
+  },
+  "done": true,
+  "done_reason": "length",
+  "total_duration": 15878997546,
+  "load_duration": 2326375,
+  "prompt_eval_count": 19153,
+  "prompt_eval_cached_count": 0,
+  "prompt_eval_duration": 15501628000,
+  "eval_count": 1,
+  "eval_duration": 1000,
+  "_probe": {
+    "note": "replay with prior assistant thinking resent as content",
+    "messages": 35
+  }
+}

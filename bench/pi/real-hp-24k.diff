@@ -1,0 +1,88 @@
+diff --git a/tests/test_btsnoop.py b/tests/test_btsnoop.py
+index 9b7e182..9680137 100644
+--- a/tests/test_btsnoop.py
++++ b/tests/test_btsnoop.py
+@@ -115,6 +115,46 @@ class BtsnoopTest(unittest.TestCase):
+         empty = bs.Analyzer()
+         self.assertIn("не найдено", bs.render_report(empty, "x"))
+ 
++    def test_eq_bands_of_valid(self):
++        # кадр 0x54 с payload 70 байт → 10 кортежей, band0 равен (1, 1950, 74, 80)
++        # enable=1, gain=1950=0x079E, freq=74=0x004A, q=80=0x0050
++        payload = bytes([0x01, 0x07, 0x9E, 0x00, 0x4A, 0x00, 0x50]) + b"\x00" * 63
++        # LE variant: direction=0x11, cmd=0x54, length=70 (LE), seq=1, checksum=0x46
++        frame = bs.parse_onemore(bytes([0x11, 0x01, 0x00, 0x54, 0x46, 0x00, 0x01, 0x00, 0x46]) + payload)
++        self.assertIsNotNone(bs.eq_bands_of(frame))
++        bands = bs.eq_bands_of(frame)
++        self.assertEqual(len(bands), 10)
++        self.assertEqual(bands[0], (1, 1950, 74, 80))
++
++    def test_eq_bands_of_invalid_payload_len(self):
++        # payload 69 и 71 байт → None
++        short = bs.parse_onemore(bytes([0x01, 0x01, 0x00, 0x54, 0x00, 0x45, 0x00, 0x01, 0x45]) + bytes(69))
++        self.assertIsNone(bs.eq_bands_of(short))
++        long_ = bs.parse_onemore(bytes([0x01, 0x01, 0x00, 0x54, 0x00, 0x47, 0x00, 0x01, 0x47]) + bytes(71))
++        self.assertIsNone(bs.eq_bands_of(long_))
++
++    def test_eq_bands_of_wrong_cmd(self):
++        # кадр другого cmd → None
++        frame = bs.parse_onemore(bytes([0x01, 0x01, 0x00, 0x53, 0x00, 0x46, 0x00, 0x01, 0x46]) + bytes(70))
++        self.assertIsNone(bs.eq_bands_of(frame))
++
++    def test_eq_bands_in_report(self):
++        # в отчёте для кадра 0x54 присутствует строка про полосы
++        payload = bytes([0x01, 0x07, 0x9E, 0x00, 0x4A, 0x00, 0x50]) + b"\x00" * 63
++        # LE variant: direction=0x11, cmd=0x54, length=70 (LE), seq=1, checksum=0x46
++        frame_data = bytes([0x11, 0x01, 0x00, 0x54, 0x46, 0x00, 0x01, 0x00, 0x46]) + payload
++        # Создаём файл btsnoop с кадром EQ bands
++        header = bs.MAGIC + struct.pack(">II", 1, bs.DLT_H4)
++        pkt = struct.pack(">IIIIq", len(frame_data), len(frame_data), 0, 0, 100) + frame_data
++        blob = header + pkt
++        tmp = tempfile.TemporaryDirectory()
++        path = Path(tmp.name) / "eq.btsnoop"
++        path.write_bytes(blob)
++        an = bs.analyze(path)
++        report = bs.render_report(an, "eq")
++        self.assertIn("10 полос", report)
++        tmp.cleanup()
++
+ 
+ if __name__ == "__main__":
+     unittest.main()
+diff --git a/tools/btsnoop.py b/tools/btsnoop.py
+index 18fde78..93c789b 100644
+--- a/tools/btsnoop.py
++++ b/tools/btsnoop.py
+@@ -414,6 +414,20 @@ def battery_of(f: OneMoreFrame) -> tuple[int, int, int] | None:
+     return p[4], p[8], p[9]
+ 
+ 
++def eq_bands_of(f: OneMoreFrame) -> list[tuple[int, int, int, int]] | None:
++    """(enable, gain, freq, q) для 10 полос EQ из ответа 0x54, либо None."""
++    p = f.payload
++    if f.cmd != CMD_EQ_BANDS or f.direction_byte != 0x01 or len(p) != 70:
++        return None
++    bands = []
++    for i in range(10):
++        off = i * 7
++        enable = p[off]
++        gain, freq, q = struct.unpack(">HHH", p[off + 1 : off + 7])
++        bands.append((enable, gain, freq, q))
++    return bands
++
++
+ def decode_value(f: OneMoreFrame) -> str:
+     p = f.payload
+     if not p:
+@@ -428,6 +442,11 @@ def decode_value(f: OneMoreFrame) -> str:
+     if battery:
+         left, right, case = battery
+         return f" (L={left}% R={right}% кейс={case}%)"
++    if f.cmd == CMD_EQ_BANDS and len(p) == 70:
++        bands = eq_bands_of(f)
++        if bands:
++            b0 = bands[0]
++            return f" (10 полос; band0 gain={b0[1]} freq={b0[2]} Q={b0[3]})"
+     return ""
+ 
+ 
