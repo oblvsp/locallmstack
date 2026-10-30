@@ -1,0 +1,7 @@
+diff --git a/config.py b/config.py
+index d401e83..3b0258f 100644
+--- a/config.py
++++ b/config.py
+@@ -1 +1 @@
+-DECIMALS = 2
++DECIMALS = 3

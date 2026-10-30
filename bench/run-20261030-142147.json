@@ -1,0 +1,236 @@
+{
+  "ts": "2026-10-30T14:20:57",
+  "label": "baseline-24576",
+  "host": "http://127.0.0.1:11435",
+  "model": "qwen3.5:9b",
+  "num_ctx": 24576,
+  "temperature": 0.1,
+  "ollama": "ollama version is 0.40.11",
+  "show": {
+    "details": {
+      "parent_model": "model.gguf",
+      "format": "gguf",
+      "family": "qwen35",
+      "families": [
+        "qwen35"
+      ],
+      "parameter_size": "9.0B",
+      "quantization_level": "Q4_K_M",
+      "runner": "llamacpp"
+    },
+    "capabilities": [
+      "completion",
+      "vision",
+      "tools",
+      "thinking"
+    ],
+    "model_info": {
+      "general.architecture": "qwen35",
+      "general.base_model.0.name": "Qwen3.5 9B Base",
+      "general.base_model.0.organization": "Qwen",
+      "general.base_model.0.repo_url": "https://huggingface.co/Qwen/Qwen3.5-9B-Base",
+      "general.base_model.count": 1,
+      "general.file_type": 15,
+      "general.license": "apache-2.0",
+      "general.license.link": "https://huggingface.co/Qwen/Qwen3.5-9B/blob/main/LICENSE",
+      "general.parameter_count": 8953803264,
+      "general.quantization_version": 2,
+      "general.size_label": "9.0B",
+      "general.tags": [
+        "image-text-to-text"
+      ],
+      "general.type": "model",
+      "qwen35.attention.head_count": 16,
+      "qwen35.attention.head_count_kv": 4,
+      "qwen35.attention.key_length": 256,
+      "qwen35.attention.layer_norm_rms_epsilon": 1e-06,
+      "qwen35.attention.recurrent_layers": [
+        true,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true,
+        false
+      ],
+      "qwen35.attention.value_length": 256,
+      "qwen35.block_count": 32,
+      "qwen35.context_length": 262144,
+      "qwen35.embedding_length": 4096,
+      "qwen35.feed_forward_length": 12288,
+      "qwen35.full_attention_interval": 4,
+      "qwen35.rope.dimension_count": 64,
+      "qwen35.rope.dimension_sections": [
+        11,
+        11,
+        10,
+        0
+      ],
+      "qwen35.rope.freq_base": 10000000,
+      "qwen35.ssm.conv_kernel": 4,
+      "qwen35.ssm.group_count": 16,
+      "qwen35.ssm.inner_size": 4096,
+      "qwen35.ssm.state_size": 128,
+      "qwen35.ssm.time_step_rank": 32,
+      "tokenizer.ggml.add_bos_token": false,
+      "tokenizer.ggml.eos_token_id": 248046,
+      "tokenizer.ggml.merges": [],
+      "tokenizer.ggml.model": "gpt2",
+      "tokenizer.ggml.padding_token_id": 248044,
+      "tokenizer.ggml.pre": "qwen35",
+      "tokenizer.ggml.token_type": [],
+      "tokenizer.ggml.tokens": []
+    },
+    "context_length": 262144,
+    "block_count": 32,
+    "head_count_kv": 4,
+    "embedding_length": 4096
+  },
+  "gpu_before": {
+    "vram_used_mb": 7144,
+    "vram_total_mb": 8192,
+    "temp_c": 40.0,
+    "power_w": 29.88,
+    "sm_mhz": 645,
+    "util_pct": 32
+  },
+  "ram_before": {
+    "ram_available_mb": 23557,
+    "ram_used_mb": 8480,
+    "swap_used_mb": 0
+  },
+  "cold": {
+    "first_any_s": 4.799,
+    "ttft_s": 4.799,
+    "total_s": 13.036,
+    "load_s": 4.577,
+    "prompt_tok": 55,
+    "out_tok": 190,
+    "decode_tps": 23.07,
+    "prompt_tps": 251.91,
+    "chunks": 181,
+    "finish": "stop"
+  },
+  "gpu_after_cold": {
+    "vram_used_mb": 6948,
+    "vram_total_mb": 8192,
+    "temp_c": 46.0,
+    "power_w": 130.19,
+    "sm_mhz": 1965,
+    "util_pct": 39
+  },
+  "warm": [
+    {
+      "first_any_s": 0.177,
+      "ttft_s": 0.177,
+      "total_s": 7.542,
+      "load_s": 0.001,
+      "prompt_tok": 55,
+      "out_tok": 169,
+      "decode_tps": 22.95,
+      "prompt_tps": 491.07,
+      "chunks": 160,
+      "finish": "stop"
+    },
+    {
+      "first_any_s": 0.179,
+      "ttft_s": 0.179,
+      "total_s": 7.256,
+      "load_s": 0.0,
+      "prompt_tok": 55,
+      "out_tok": 166,
+      "decode_tps": 23.46,
+      "prompt_tps": 542.12,
+      "chunks": 157,
+      "finish": "stop"
+    },
+    {
+      "first_any_s": 0.198,
+      "ttft_s": 0.198,
+      "total_s": 8.923,
+      "load_s": 0.0,
+      "prompt_tok": 55,
+      "out_tok": 205,
+      "decode_tps": 23.5,
+      "prompt_tps": 551.42,
+      "chunks": 196,
+      "finish": "stop"
+    }
+  ],
+  "gpu_during": {
+    "vram_used_mb": 6938,
+    "vram_total_mb": 8192,
+    "temp_c": 52.0,
+    "power_w": 118.06,
+    "sm_mhz": 1950,
+    "util_pct": 42
+  },
+  "tool_native": {
+    "path": "native /api/chat",
+    "tool_calls": 1,
+    "fn": "read_file",
+    "args_ok": true,
+    "args": {
+      "max_lines": 40,
+      "path": "bench/bench_local.py"
+    },
+    "text_len": 0,
+    "out_tok": 42,
+    "finish": "stop"
+  },
+  "tool_openai": {
+    "path": "openai /v1",
+    "tool_calls": 1,
+    "fn": "read_file",
+    "args_ok": true,
+    "args": "{\"path\":\"bench/bench_local.py\",\"max_lines\":40}",
+    "sse_events": 61,
+    "buffered_json": 0,
+    "first_byte_s": 0.095
+  },
+  "roundtrip": {
+    "path": "tool roundtrip",
+    "ok": true,
+    "out_tok": 85,
+    "finish": "stop",
+    "reply": "Этот скрипт (`bench/bench_local.py`) измеряет следующие метрики:  1.  **TTFT (Time to First Token)** — время до первого токена (латентность). 2.  **Decode tok/s"
+  },
+  "gpu_after": {
+    "vram_used_mb": 6950,
+    "vram_total_mb": 8192,
+    "temp_c": 55.0,
+    "power_w": 135.26,
+    "sm_mhz": 1935,
+    "util_pct": 38
+  },
+  "ram_after": {
+    "ram_available_mb": 24715,
+    "ram_used_mb": 7322,
+    "swap_used_mb": 0
+  }
+}

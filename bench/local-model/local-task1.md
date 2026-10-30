@@ -1,0 +1,14 @@
+- [ ] Ollama установлен и доступен по стандартному порту (или альтернативному) → `ollama --version && netstat -tlnp | grep 11435`
+- [ ] В системе загружены модели, указанные в README (`qwen3:8b`, `qwen3.5:9b`, `gpt-oss:20b`) → `ollama list`
+- [ ] Служба Ollama запущена и не находится в состоянии ошибки → `systemctl status ollama`
+- [ ] GPU NVIDIA RTX 2070 SUPER распознана системой и драйверы установлены → `nvidia-smi`
+- [ ] Доступна память RAM (общая и свободная) для оценки нагрузки на инференс → `free -h`
+- [ ] Поддерживается ли swap/zram и каков его объем (критично для 20B моделей) → `swapon --show && free -h`
+- [ ] Архитектура CPU и количество потоков соответствуют заявленным (i5-8400, 6 ядер/потоков) → `lscpu | grep "Model name" && lscpu | grep "CPU(s)"`
+- [ ] Версия ОС соответствует Linux Mint 22.3 x86_64 → `cat /etc/os-release | grep PRETTY_NAME`
+- [ ] Порт bastion (11434) и proxy (11436) либо свободны, либо заняты конкретными процессами из проекта linuxmintai → `netstat -tlnp | grep -E '11434|11436'`
+- [ ] Файл конфигурации или окружения Ollama содержит переменные для ограничения параллелизма (`OLLAMA_NUM_PARALLEL`, `OLLAMA_MAX_LOADED_MODELS`) → `grep -r "OLLAMA_NUM_PARALLEL\|OLLAMA_MAX_LOADED_MODELS" /etc/systemd/system/ollama.service 2>/dev/null || echo "Переменные не найдены в systemd override"`
+- [ ] Модели имеют корректные теги и метаданные (квантование, размер), соответствующие описанию в README → `ollama show qwen3:8b --modelfile && ollama show qwen3.5:9b --modelfile && ollama show gpt-oss:20b --modelfile`
+- [ ] Файл `.pidevignore` или аналогичный файл игнорирования для pi.dev существует и содержит ожидаемые паттерны → `ls -la .pidevignore 2>/dev/null || echo "Файл .pidevignore отсутствует"`
+- [ ] Скрипт бенчмарка (или его исходный код) присутствует в репозитории для проверки производительности → `find . -name "*benchmark*" -o -name "*test_perf*" 2>/dev/null`
+- [ ] Файлы `PLANPR.md` и `LOGPR.md` существуют и содержат актуальные данные о текущей задаче/состоянии → `ls -la PLANPR.md LOGPR.md 2>/dev/null

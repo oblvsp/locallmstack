@@ -1,0 +1,24 @@
+diff --git a/stats.py b/stats.py
+index 6413df3..046c86f 100644
+--- a/stats.py
++++ b/stats.py
+@@ -1,10 +1,18 @@
+ def mean(values):
++    if not values:
++        return 0.0
+     return sum(values) / len(values)
+ 
+ 
+ def median(values):
+     values = sorted(values)
+-    return values[len(values) // 2]
++    n = len(values)
++    if n == 0:
++        return 0.0
++    mid = n // 2
++    if n % 2 == 0:
++        return (values[mid - 1] + values[mid]) / 2
++    return values[mid]
+ 
+ 
+ def report(values):
