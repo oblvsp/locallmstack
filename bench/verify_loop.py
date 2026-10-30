@@ -18,11 +18,13 @@
       --task "Исправь percent(0, 0) и добейся зелёных тестов."
 
 Репозиторий должен быть чистым: цикл не должен смешивать свои правки
-с чужими. Скрытая приёмка не показывается модели.
+с чужими. Скрытая приёмка не показывается модели. После --repeat-limit
+одинаковых вызовов подряд цикл останавливается как застрявший.
 """
 from __future__ import annotations
 
 import argparse
+import difflib
 import fnmatch
 import json
 import os
@@ -163,9 +165,16 @@ class Repo:
         n = text.count(old)
         if n != 1:
             raise ToolError(f"old встречается {n} раз; нужна ровно одна замена")
+        updated = text.replace(old, new, 1)
         with open(full, "w", encoding="utf-8") as f:
-            f.write(text.replace(old, new, 1))
-        return f"заменено в {rel}"
+            f.write(updated)
+        diff = "".join(difflib.unified_diff(
+            text.splitlines(keepends=True), updated.splitlines(keepends=True),
+            fromfile=f"a/{rel}", tofile=f"b/{rel}", n=2,
+        ))
+        if len(diff) > 2000:
+            diff = diff[:2000] + "\n... [дифф обрезан]"
+        return f"заменено в {rel}\n{diff}"
 
     def write(self, path: str, content: str) -> str:
         rel = self.rel(path)
@@ -211,7 +220,8 @@ class Repo:
         return r.stdout.strip() or "(нет изменений в отслеживаемых файлах)"
 
 
-def chat(messages: list, ctx: int, num_predict: int, think: bool, model: str) -> dict:
+def chat(messages: list, ctx: int, num_predict: int, think: bool, model: str,
+         host: str) -> dict:
     payload = {
         "model": model,
         "messages": messages,
@@ -221,10 +231,23 @@ def chat(messages: list, ctx: int, num_predict: int, think: bool, model: str) ->
         "options": {"num_ctx": ctx, "temperature": 0.1, "num_predict": num_predict},
     }
     req = urllib.request.Request(
-        f"{HOST}/api/chat", data=json.dumps(payload).encode(),
+        f"{host.rstrip('/')}/api/chat", data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"},
     )
     return json.loads(urllib.request.urlopen(req, timeout=1800).read())
+
+
+def brief_args(args: dict) -> dict:
+    def short(value):
+        if value is None or isinstance(value, (int, float, bool)):
+            return value
+        s = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+        return s if len(s) <= 160 else s[:160] + "…"
+    return {k: short(v) for k, v in (args or {}).items()}
+
+
+def calls_signature(parsed: list[tuple[str, dict]]) -> str:
+    return json.dumps(parsed, ensure_ascii=False, sort_keys=True)
 
 
 def estimate_tokens(messages: list) -> int:
@@ -254,7 +277,8 @@ def system_prompt(allow: list[str]) -> str:
         "запусти run_tests. Если тесты падают — читай вывод и исправляй.\n"
         "Обвязка сама запускает тесты после каждого шага и сама проверяет дифф. "
         "Твоё «готово» не принимается: цикл закончится только по зелёным тестам и чистому диффу. "
-        "Не меняй тесты и не пытайся обойти проверку."
+        "Не меняй тесты и не пытайся обойти проверку. "
+        "Если повторяешь один и тот же вызов, результат не изменится — смени подход."
     )
 
 
@@ -314,9 +338,12 @@ def main() -> int:
     ap.add_argument("--test-cmd", required=True)
     ap.add_argument("--check-cmd")
     ap.add_argument("--ctx", type=int, default=24576)
+    ap.add_argument("--host", default=HOST)
     ap.add_argument("--model", default=MODEL)
     ap.add_argument("--max-steps", type=int, default=12)
     ap.add_argument("--max-out", type=int, default=1600)
+    ap.add_argument("--repeat-limit", type=int, default=3,
+                    help="обрыв после N подряд идентичных вызовов; 0 — выключить")
     ap.add_argument("--think", action="store_true")
     ap.add_argument("--timeout", type=int, default=300)
     ap.add_argument("--out")
@@ -343,6 +370,10 @@ def main() -> int:
     steps: list[dict] = []
     accepted = False
     nudge = ""
+    last_nudge = ""
+    last_sig: str | None = None
+    repeat = 0
+    stop_reason = ""
     started = time.perf_counter()
     last_prompt = 0
 
@@ -351,7 +382,8 @@ def main() -> int:
         if estimate_tokens(messages) > budget:
             shrink(messages, budget)
         if estimate_tokens(messages) > budget:
-            nudge = "История не помещается в контекст даже после сокращения."
+            stop_reason = "история не помещается в контекст"
+            nudge = stop_reason
             break
 
         num_predict = args.max_out
@@ -359,12 +391,17 @@ def main() -> int:
             num_predict = max(256, min(num_predict, args.ctx - last_prompt - 512))
 
         if nudge:
-            messages.append({"role": "user", "content": nudge})
+            content = nudge
+            if nudge == last_nudge:
+                content = ("Результат и проверка не изменились с прошлого шага. "
+                           "Не повторяй то же действие — смени подход.")
+            messages.append({"role": "user", "content": content})
+            last_nudge = nudge
             nudge = ""
 
         t0 = time.perf_counter()
         try:
-            r = chat(messages, args.ctx, num_predict, args.think, args.model)
+            r = chat(messages, args.ctx, num_predict, args.think, args.model, args.host)
         except (urllib.error.URLError, TimeoutError) as e:
             nudge = f"Ошибка запроса к Ollama: {e}. Продолжай инструментами."
             steps.append({"step": step, "error": str(e)})
@@ -372,6 +409,25 @@ def main() -> int:
 
         msg = r.get("message") or {}
         calls = msg.get("tool_calls") or []
+        parsed: list[tuple[str, dict]] = []
+        for c in calls:
+            fn = c["function"]
+            a = fn.get("arguments")
+            if isinstance(a, str):
+                try:
+                    a = json.loads(a)
+                except json.JSONDecodeError:
+                    a = {}
+            parsed.append((fn["name"], a or {}))
+        sig = calls_signature(parsed) if parsed else None
+        if sig and sig == last_sig:
+            repeat += 1
+        elif sig:
+            repeat = 1
+        else:
+            repeat = 0
+        last_sig = sig
+
         last_prompt = int(r.get("prompt_eval_count") or last_prompt)
         entry = {
             "step": step,
@@ -379,7 +435,9 @@ def main() -> int:
             "prompt_tok": r.get("prompt_eval_count"),
             "out_tok": r.get("eval_count"),
             "finish": r.get("done_reason"),
-            "tools": [c["function"]["name"] for c in calls],
+            "tools": [name for name, _ in parsed],
+            "calls": [{"name": name, "args": brief_args(a)} for name, a in parsed],
+            "repeat": repeat,
             "content": (msg.get("content") or "")[:400],
         }
         steps.append(entry)
@@ -391,16 +449,9 @@ def main() -> int:
                 "content": msg.get("content") or "",
                 "tool_calls": calls,
             })
-            for c in calls:
-                fn = c["function"]
-                a = fn.get("arguments")
-                if isinstance(a, str):
-                    try:
-                        a = json.loads(a)
-                    except json.JSONDecodeError:
-                        a = {}
-                result = tool_result(repo, fn["name"], a or {}, args.test_cmd, args.timeout)
-                messages.append({"role": "tool", "tool_name": fn["name"], "content": result})
+            for name, a in parsed:
+                result = tool_result(repo, name, a, args.test_cmd, args.timeout)
+                messages.append({"role": "tool", "tool_name": name, "content": result})
 
         g = gate(repo, args.allow, args.test_cmd, args.check_cmd, args.timeout)
         entry["gate"] = {
@@ -409,6 +460,10 @@ def main() -> int:
         }
         if g["passed"]:
             accepted = True
+            break
+
+        if args.repeat_limit and repeat >= args.repeat_limit:
+            stop_reason = f"нет прогресса: {repeat} одинаковых вызовов подряд"
             break
 
         if calls:
@@ -440,6 +495,8 @@ def main() -> int:
     final = gate(repo, args.allow, args.test_cmd, args.check_cmd, args.timeout)
     if final["passed"]:
         accepted = True
+    if not stop_reason and not accepted:
+        stop_reason = f"исчерпаны шаги ({args.max_steps})"
     total = time.perf_counter() - started
     claim = next((s.get("content") for s in reversed(steps) if s.get("content")), "")
 
@@ -449,8 +506,11 @@ def main() -> int:
         "test_cmd": args.test_cmd,
         "check_cmd": args.check_cmd,
         "ctx": args.ctx,
+        "host": args.host,
         "model": args.model,
         "think": args.think,
+        "repeat_limit": args.repeat_limit,
+        "stop_reason": stop_reason,
         "accepted": accepted,
         "steps": steps,
         "gate": {k: v for k, v in final.items() if k not in ("tests_tail", "check_tail")},
@@ -473,6 +533,8 @@ def main() -> int:
           f"приёмка={check_label} · "
           f"дифф={len(final['changed'])} · нарушений={len(final['violations'])}")
     print("изменено:", ", ".join(final["changed"]) or "ничего")
+    if stop_reason:
+        print("остановка:", stop_reason)
     if claim:
         print("заявление модели (не влияет на приёмку):", claim.strip()[:300])
     print("артефакт:", out)
