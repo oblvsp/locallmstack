@@ -284,12 +284,12 @@ def gate(repo: Repo, allow: list[str], test_cmd: str, check_cmd: str | None,
         p for p in changed
         if not any(fnmatch.fnmatch(p, a) or p == a or p.startswith(a + "/") for a in allow)
     ]
-    check_code, check_out = 0, ""
-    if check_cmd and code == 0 and changed and not violations:
+    check_code, check_out = None, ""
+    if check_cmd and changed and not violations:
         check_code, check_out, _ = repo.run(check_cmd, timeout)
     tests_ok = code == 0
     diff_ok = bool(changed)
-    check_ok = check_code == 0
+    check_ok = None if check_code is None else check_code == 0
     return {
         "tests_ok": tests_ok,
         "tests_exit": code,
@@ -301,7 +301,7 @@ def gate(repo: Repo, allow: list[str], test_cmd: str, check_cmd: str | None,
         "check_ok": check_ok,
         "check_exit": check_code,
         "check_tail": check_out[-2000:],
-        "passed": tests_ok and diff_ok and not violations and check_ok,
+        "passed": tests_ok and diff_ok and not violations and check_ok is not False,
     }
 
 
@@ -420,7 +420,7 @@ def main() -> int:
                          .format(g["tests_exit"], g["tests_tail"][-2000:]))
             elif not g["diff_nonempty"]:
                 nudge = "Проверка: тесты зелёные, но дифф пуст — задача не выполнена."
-            elif not g["check_ok"]:
+            elif g["check_ok"] is False:
                 nudge = ("Проверка: внешняя приёмка не пройдена (exit={}). "
                          "Доведи решение, не подгоняя тесты.".format(g["check_exit"]))
         else:
@@ -431,7 +431,7 @@ def main() -> int:
                          "Вот фактический вывод:\n{}").format(g["tests_exit"], g["tests_tail"][-2000:])
             elif not g["diff_nonempty"]:
                 nudge = "Ты объявил завершение, но в репозитории нет изменений."
-            elif not g["check_ok"]:
+            elif g["check_ok"] is False:
                 nudge = "Ты закончил, но внешняя приёмка не пройдена."
             else:
                 accepted = True
@@ -467,8 +467,10 @@ def main() -> int:
     with open(out, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
 
+    check_label = "нет" if final["check_ok"] is None else ("ok" if final["check_ok"] else "fail")
     print(f"\nитог: {'ПРИНЯТО' if accepted else 'НЕ ПРИНЯТО'} · шагов {len(steps)} · "
           f"{total:.1f} s · тесты={'ok' if final['tests_ok'] else 'fail'} · "
+          f"приёмка={check_label} · "
           f"дифф={len(final['changed'])} · нарушений={len(final['violations'])}")
     print("изменено:", ", ".join(final["changed"]) or "ничего")
     if claim:
